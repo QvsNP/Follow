@@ -23,3 +23,5 @@ export default {
 }
 ```
 
+## If it does not seem to run properly then Delete the dbFollow folder the script created 
+
