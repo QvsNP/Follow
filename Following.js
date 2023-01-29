@@ -1,6 +1,9 @@
-import { TwitterApi, ETwitterStreamEvent } from 'twitter-api-v2';
+const { TwitterApi, ETwitterStreamEvent } = require("twitter-api-v2");
 
-import config from './config.js';
+const config = require('./config.js');
+console.log(config);
+
+const fs = require('fs');
 
 const client = new TwitterApi(config.bearer);
 
@@ -15,11 +18,11 @@ const userClient = new TwitterApi({
 });
 
 
-const userID = config.userID;
+let userID;
 
 const waitTime = 3600000;
 
-const result_count = 100;
+const result_count = 1000;
 
 class Following {
     constructor() {
@@ -33,7 +36,6 @@ class Following {
         this.AddFollowersList = new Set(dbFollow.readDB(dbAddFollowersList));
         this.followRateLimit = dbFollow.readRateLimit();
         this.reset = true;
-
         console.log(this.followers.length)
         console.log(this.following.length)
         this.main();
@@ -61,15 +63,21 @@ class Following {
             fs.writeFileSync(dbFollowers, "[ ")
         }
         
-        await sleep(waitTime);
-        this.main();
+        sleep(waitTime).then(
+            () => {
+                this.main();
+            }
+        );
+        
     }
 
 
     async main() {
         console.log(this.removeFollowList.size);
         console.log(this.AddFollowersList.size);
-        if (this.removeFollowList.size > 0 || this.AddFollowersList.size > 0) {
+
+        if ((this.removeFollowList.size > 0 && config.unfollow) ||
+             (this.AddFollowersList.size > 0 && config.follow)) {
             if(config.follow){
                 this.follow();
             }
@@ -191,6 +199,8 @@ class Following {
             if (this.rateLimitTooHigh()) {
                 return;
             }
+            console.log(val);
+            await sleep(3000);
             await userClient.v2.unfollow(userID, val).then((data) => {
                 console.log("unfollowed: " + data);
                 this.followRateLimit++;
@@ -198,7 +208,7 @@ class Following {
             });
             this.removeFollowList.delete(val);
             dbFollow.writeDB(dbRemoveFollowList, Array.from(this.removeFollowList));
-            await sleep(3000);
+            
         }
     }
 
@@ -209,6 +219,8 @@ class Following {
             if (this.rateLimitTooHigh()) {
                 return;
             }
+            console.log(val);
+            await sleep(3000);
             await userClient.v2.follow(userID, val).then((data) => {
                 console.log("Followed: " + data);
                 this.followRateLimit++;
@@ -216,7 +228,6 @@ class Following {
             });
             this.AddFollowersList.delete(val);
             dbFollow.writeDB(dbAddFollowersList, Array.from(this.AddFollowersList));
-            await sleep(3000);
         }
     }
 
@@ -239,7 +250,7 @@ function sleep(ms) {
     });
 }
 
-import fs from "fs";
+
 let dbPath = "./dbFollow"
 let dbFollowing = "./dbFollow/dbFollowing.txt"
 let dbFollowers = "./dbFollow/dbFollowers.txt"
@@ -293,13 +304,21 @@ class dbFollow {
         fs.writeFileSync(dbFollowers, "[ ")
         fs.writeFileSync(dbRemoveFollowList, "[ ")
         fs.writeFileSync(dbAddFollowersList, "[ ")
-        fs.writeFileSync(dbRateLimit, "")
+        fs.writeFileSync(dbRateLimit, "0")
     }
 }
 
 
 
+async function start(){
+    await userClient.v2.userByUsername(config.userName).then((data) => {
+        console.log(data);
+        userID = data.data.id;
+        new Following()
+    });
+}
 
-new Following()
-// console.log(dbFollow.readFollowers())
-// console.log(dbFollow.readFollowing()[1])
+start();
+
+
+
