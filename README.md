@@ -1,4 +1,5 @@
-# Twitter Follow Back and Unfollow non Followers
+# 👪 Twitter Follow Back and Unfollow non Followers 👪
+With local storage. 
 
 ## ⚠ Run at your own Risk. But it should operate within the limits of the API ⚠
 ## This Program is still very new and might contain some bugs.
@@ -30,5 +31,5 @@ export default {
 }
 ```
 
-## If it does not seem to run properly then Delete the dbFollow folder the script created 
+## If it does not seem to run properly then Delete the dbFollow folder the script created it will be created in the same directy as the script
 
