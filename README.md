@@ -1,6 +1,12 @@
+## ⚠ Run at your own Risk. But it should operate within the limits of the API ⚠
+## This Program is still very new and might contain some bugs.
+
 # Twitter Follow Back and Unfollow non Followers
 
+Install 👇
 This Script Uses the twitter-api-v2 npm module Found here https://www.npmjs.com/package/twitter-api-v2
+
+I suggest you find a way to run it in the background so you don't closet the program.
 
 To run the Following.js Script Fill out the config file with the following keys and tokens from your twitter developer account. 
 Also set Follow and Unfollow with the Proper attribute [True Or False]
