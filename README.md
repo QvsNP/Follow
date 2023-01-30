@@ -10,6 +10,8 @@ This Script Uses the twitter-api-v2 npm module Found here https://www.npmjs.com/
 
 I suggest you find a way to run it in the background so you don't closet the program.
 
+
+
 To run the Following.js Script Fill out the config file with the following keys and tokens from your twitter developer account. 
 Also set Follow and Unfollow with the Proper attribute [True Or False]
 
@@ -30,6 +32,7 @@ export default {
     unfollow: true,
 }
 ```
+## 🔥 Run Following.js
 
 ## If it does not seem to run properly then Delete the dbFollow folder the script created it will be created in the same directy as the script
 
