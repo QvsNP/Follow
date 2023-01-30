@@ -1,9 +1,10 @@
 const { TwitterApi, ETwitterStreamEvent } = require("twitter-api-v2");
 
-const config = require('./config.js');
+const config = require('./xConfig.js');
 console.log(config);
 
 const fs = require('fs');
+
 
 const client = new TwitterApi(config.bearer);
 
@@ -39,10 +40,8 @@ class Following {
         console.log(this.followers.length)
         console.log(this.following.length)
         this.main();
-
         // this.gatherFollowersAndFollowing();
     }
-
 
     async gatherFollowersAndFollowing() {
         let T1;
@@ -62,35 +61,37 @@ class Following {
             fs.writeFileSync(dbFollowing, "[ ")
             fs.writeFileSync(dbFollowers, "[ ")
         }
-        
+
+        console.log("Sleeping for 1 Hour");
         sleep(waitTime).then(
             () => {
                 this.main();
             }
         );
-        
     }
 
 
-    async main() {
-        console.log(this.removeFollowList.size);
-        console.log(this.AddFollowersList.size);
-
+    main() {
         if ((this.removeFollowList.size > 0 && config.unfollow) ||
-             (this.AddFollowersList.size > 0 && config.follow)) {
-            if(config.follow){
+            (this.AddFollowersList.size > 0 && config.follow)) {
+            if (config.follow) {
                 this.follow();
             }
-            if(config.unfollow){
+            if (config.unfollow) {
                 this.unfollow();
             }
-            
-            sleep(waitTime).then(() => {
-                this.main()
-            });
-            return;
+            console.log("Sleeping for 1 Hour");
+            sleep(waitTime).then(
+                () => {
+                    this.main();
+                }
+            );
+
+        } else {
+            this.gatherFollowersAndFollowing();
         }
-        this.gatherFollowersAndFollowing();
+        
+
     }
 
     buildSets() {
@@ -208,7 +209,7 @@ class Following {
             });
             this.removeFollowList.delete(val);
             dbFollow.writeDB(dbRemoveFollowList, Array.from(this.removeFollowList));
-            
+
         }
     }
 
@@ -280,9 +281,9 @@ class dbFollow {
     static writeRateLimit(number) {
         fs.writeFileSync(dbRateLimit, JSON.stringify(number));
     }
-    
 
-    static readRateLimit(){
+
+    static readRateLimit() {
         let data = fs.readFileSync(dbRateLimit, 'utf8');
         return JSON.parse(data);
     }
@@ -310,7 +311,8 @@ class dbFollow {
 
 
 
-async function start(){
+async function start() {
+    // dbFollow.cleanDB();
     await userClient.v2.userByUsername(config.userName).then((data) => {
         console.log(data);
         userID = data.data.id;
