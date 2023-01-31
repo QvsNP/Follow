@@ -384,9 +384,6 @@ async function start(_config) {
 
     client = new TwitterApi(config.bearer);
 
-
-
-
     // dbFollow.cleanDB();
 
     await userClient.v2.userByUsername(config.userName).then((data) => {
