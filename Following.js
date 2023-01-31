@@ -1,22 +1,14 @@
 const { TwitterApi, ETwitterStreamEvent } = require("twitter-api-v2");
 
-const config = require('./xConfig.js');
+let config;
 console.log(config);
 
 const fs = require('fs');
 
 
-const client = new TwitterApi(config.bearer);
+let client;
 
-const userClient = new TwitterApi({
-    appKey: config.appKey,
-    appSecret: config.appSecret,
-    // Following access tokens are not required if you are
-    // at part 1 of user-auth process (ask for a request token)
-    // or if you want a app-only client (see below)
-    accessToken: config.accessToken,
-    accessSecret: config.accessSecret,
-});
+let userClient;
 
 
 let userID;
@@ -61,46 +53,52 @@ class Following {
             this.addNonFollowsToList();
             fs.writeFileSync(dbFollowing, "[ ")
             fs.writeFileSync(dbFollowers, "[ ")
-            
+            await sleep(waitTime);
+            this.followers = [];
+            this.following = [];
+            await this.checkLimits();
         } else {
-            if (this.rateLimit.FollowLookUP.limit >= this.rateLimit.FollowLookUP.maxLimitHour) {
-               await sleep(waitTime); 
-               this.rateLimit.FollowLookUP.limit = 0;
-            } else {
+            if (this.rateLimit.FollowLookUP.limitHour >= this.rateLimit.FollowLookUP.maxLimitHour) {
+                console.log("Sleeping for 1 hour");
+                await sleep(waitTime);
+                console.log("Done Sleep");
+                this.rateLimit.FollowLookUP.limit = 0;
+                await this.checkLimits();
+            }else {
                 this.gatherFollowersAndFollowing();
             }
         }
     }
 
     async checkLimits() {
-        while (true) {
-            if (this.AddFollowersList.size > 0 || this.AddFollowersList.size) {
-                if (config.follow) {
-                    this.resetRateLimit(this.rateLimit.Follow);
-                    if(!this.rateLimitHourTooHigh(this.rateLimit.Follow) &&
-                     !this.rateLimitDayTooHigh(this.rateLimit.Follow)){
-                        console.log("Follow");
-                        await this.follow();
-                    }
+        // console.log("check Limits");
+        if (this.AddFollowersList.size > 0 || this.AddFollowersList.size > 0) {
+            if (config.follow) {
+                this.resetRateLimit(this.rateLimit.Follow);
+                if (!this.rateLimitHourTooHigh(this.rateLimit.Follow) &&
+                    !this.rateLimitDayTooHigh(this.rateLimit.Follow)) {
+                    console.log("Follow");
+                    await this.follow();
                 }
-                if (config.unfollow) {
-                    this.resetRateLimit(this.rateLimit.Unfollow);
-                    if(!this.rateLimitHourTooHigh(this.rateLimit.Unfollow) &&
-                     !this.rateLimitDayTooHigh(this.rateLimit.Unfollow)){
-                        await this.follow();
-                    }
-                }
-            }else {
-                await this.gatherFollowersAndFollowing();
             }
-            console.log("sleep 1000");
-            await sleep(1000)
-
+            if (config.unfollow) {
+                this.resetRateLimit(this.rateLimit.Unfollow);
+                if (!this.rateLimitHourTooHigh(this.rateLimit.Unfollow) &&
+                    !this.rateLimitDayTooHigh(this.rateLimit.Unfollow)) {
+                    await this.unfollow();
+                }
+            }
+        } else {
+            await this.gatherFollowersAndFollowing();
+            return;
         }
+        await sleep(1000)
+        await this.checkLimits();
+        // console.log("sleep 1000");
     }
 
 
-    
+
 
     buildSets() {
         console.log("Building Sets");
@@ -260,14 +258,17 @@ class Following {
 
     resetRateLimit(obj) {
         // let ret = false;
+        // console.log(`Hour: ${obj.Hour} < ${(Date.now() - (obj.Hour - 3600000))}`);
         if (obj.Hour < Date.now() - 3600000) {
             obj.Hour = Date.now();
             obj.limitHour = 0;
             // ret = true;
+            dbFollow.writeRateLimit(this.rateLimit);
         }
         if (obj.Day < Date.now() - 86400000) {
             obj.Day = Date.now();
             obj.limit = 0;
+            dbFollow.writeRateLimit(this.rateLimit);
             // ret = true;
         }
         // return ret;
@@ -358,6 +359,7 @@ class dbFollow {
                 maxLimit: 400
             },
             FollowLookUP: {
+
                 Hour: Date.now(),
                 limitHour: 0,
                 maxLimitHour: 10,
@@ -368,8 +370,25 @@ class dbFollow {
 
 
 
-async function start() {
+async function start(_config) {
+    config = _config;
+    userClient = new TwitterApi({
+        appKey: config.appKey,
+        appSecret: config.appSecret,
+        // Following access tokens are not required if you are
+        // at part 1 of user-auth process (ask for a request token)
+        // or if you want a app-only client (see below)
+        accessToken: config.accessToken,
+        accessSecret: config.accessSecret,
+    });
+
+    client = new TwitterApi(config.bearer);
+
+
+
+
     // dbFollow.cleanDB();
+
     await userClient.v2.userByUsername(config.userName).then((data) => {
         console.log(data);
         userID = data.data.id;
@@ -377,8 +396,11 @@ async function start() {
     });
 }
 
-// dbFollow.cleanDB();
-start();
+
+module.exports = {
+    start: start
+}
+
 
 
 
